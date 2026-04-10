@@ -1,0 +1,12 @@
+[Unit]
+Description=Cortex Backend
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/env bun start
+WorkingDirectory=/home/user/CortexHub/cortex
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

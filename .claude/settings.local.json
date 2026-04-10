@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__cortex__bridge_inbox",
+      "mcp__cortex__task_list",
+      "mcp__cortex__claim_task",
+      "mcp__cortex__report_progress"
+    ]
+  }
+}

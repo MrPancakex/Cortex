@@ -1,0 +1,12 @@
+[Unit]
+Description=Cortex Gateway
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/env bun run services/gateway/server.js
+WorkingDirectory=/home/user/CortexHub/cortex
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

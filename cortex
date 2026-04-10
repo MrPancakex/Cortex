@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+CMD="${1:-help}"
+
+case "$CMD" in
+  init)    exec bun "$SCRIPT_DIR/bin/cortex-init.js" "${@:2}" ;;
+  start)
+    echo "[cortex] Starting gateway..."
+    systemctl --user start cortex-gateway.service 2>/dev/null || true
+    echo "[cortex] Starting backend + dashboard..."
+    nohup bun "$SCRIPT_DIR/platform/backend/server.js" > "$SCRIPT_DIR/logs/backend.log" 2>&1 &
+    sleep 1
+    echo "[cortex] Started. Dashboard: http://127.0.0.1:4830" ;;
+  restart)
+    echo "[cortex] Restarting gateway..."
+    systemctl --user restart cortex-gateway.service 2>/dev/null || true
+    echo "[cortex] Restarting backend..."
+    pkill -f "backend/server.js" 2>/dev/null || true
+    sleep 1
+    nohup bun "$SCRIPT_DIR/platform/backend/server.js" > "$SCRIPT_DIR/logs/backend.log" 2>&1 &
+    sleep 1
+    echo "[cortex] Restarted. Dashboard: http://127.0.0.1:4830" ;;
+  stop)
+    echo "[cortex] Stopping backend..."
+    pkill -f "backend/server.js" 2>/dev/null || true
+    echo "[cortex] Stopping gateway..."
+    systemctl --user stop cortex-gateway.service 2>/dev/null || true
+    echo "[cortex] Stopped." ;;
+  gateway)
+    case "${2:-}" in
+      start)   systemctl --user start cortex-gateway.service && echo "[cortex] Gateway started." ;;
+      stop)    systemctl --user stop cortex-gateway.service && echo "[cortex] Gateway stopped." ;;
+      restart) systemctl --user restart cortex-gateway.service && echo "[cortex] Gateway restarted." ;;
+      status)  systemctl --user status cortex-gateway.service --no-pager -l ;;
+      *)       echo "Usage: cortex gateway <start|stop|restart|status>" ;;
+    esac ;;
+  update)
+    echo "[cortex] Updating..."
+    echo "[cortex] Installing dependencies..."
+    cd "$SCRIPT_DIR" && bun install --frozen-lockfile 2>/dev/null || bun install
+    echo "[cortex] Building frontend..."
+    cd "$SCRIPT_DIR" && bun x vite build 2>/dev/null || echo "[cortex] Frontend build failed"
+    echo "[cortex] Restarting gateway..."
+    systemctl --user restart cortex-gateway.service 2>/dev/null || true
+    echo "[cortex] Restarting backend..."
+    pkill -f "backend/server.js" 2>/dev/null || true
+    sleep 1
+    nohup bun "$SCRIPT_DIR/platform/backend/server.js" > "$SCRIPT_DIR/logs/backend.log" 2>&1 &
+    sleep 1
+    echo "[cortex] Updated. Dashboard: http://127.0.0.1:4830" ;;
+  dev)     exec bash "$SCRIPT_DIR/scripts/dev.sh" ;;
+  build)   exec bash "$SCRIPT_DIR/scripts/build.sh" ;;
+  help|*)
+    echo "Cortex v0.1"
+    echo ""
+    echo "Usage: cortex <command>"
+    echo ""
+    echo "Commands:"
+    echo "  init              Set up Cortex for the first time"
+    echo "  start             Start gateway + dashboard (background)"
+    echo "  stop              Stop everything"
+    echo "  restart           Restart gateway + dashboard"
+    echo "  update            Install deps, rebuild frontend, restart all"
+    echo "  gateway <action>  Manage the gateway (start|stop|restart|status)"
+    echo "  build             Build the frontend for production"
+    echo "  help              Show this message"
+    ;;
+esac

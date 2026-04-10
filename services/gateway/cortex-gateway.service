@@ -1,0 +1,20 @@
+# Example systemd unit for development.
+# For hardened deployment, see docs/DEPLOYMENT.md
+[Unit]
+Description=Cortex Gateway (port 4840)
+After=network-online.target
+
+[Service]
+Type=simple
+# Adjust WorkingDirectory and ExecStart to your install location
+WorkingDirectory=%h/.cortex
+ExecStart=/usr/local/bin/bun %h/.cortex/services/gateway/server.js
+Restart=on-failure
+RestartSec=5
+Environment=NODE_ENV=production
+Environment=CORTEX_GATEWAY_HOST=127.0.0.1
+Environment=CORTEX_GATEWAY_PORT=4840
+MemoryMax=1G
+
+[Install]
+WantedBy=default.target

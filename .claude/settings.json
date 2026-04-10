@@ -1,0 +1,113 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "Agent",
+      "WebFetch",
+      "WebSearch",
+      "NotebookEdit",
+      "TaskCreate",
+      "TaskUpdate",
+      "TaskGet",
+      "TaskList",
+      "TaskOutput",
+      "TaskStop",
+      "CronCreate",
+      "CronDelete",
+      "CronList",
+      "mcp__cortex__task_create",
+      "mcp__cortex__task_get",
+      "mcp__cortex__task_list",
+      "mcp__cortex__get_next_task",
+      "mcp__cortex__claim_task",
+      "mcp__cortex__report_progress",
+      "mcp__cortex__submit_result",
+      "mcp__cortex__request_verification",
+      "mcp__cortex__task_approve",
+      "mcp__cortex__task_reject",
+      "mcp__cortex__task_update",
+      "mcp__cortex__task_cancel",
+      "mcp__cortex__task_release",
+      "mcp__cortex__task_reassign",
+      "mcp__cortex__task_comment",
+      "mcp__cortex__task_reopen",
+      "mcp__cortex__health_check",
+      "mcp__cortex__agent_status",
+      "mcp__cortex__heartbeat",
+      "mcp__cortex__agent_register",
+      "mcp__cortex__route_request",
+      "mcp__cortex__gateway_stats",
+      "mcp__cortex__cost_summary",
+      "mcp__cortex__logs_query",
+      "mcp__cortex__error_history",
+      "mcp__cortex__bridge_send",
+      "mcp__cortex__bridge_inbox",
+      "mcp__cortex__bridge_poll",
+      "mcp__cortex__bridge_reply",
+      "mcp__cortex__bridge_ack",
+      "mcp__cortex__context_save",
+      "mcp__cortex__context_retrieve",
+      "mcp__cortex__context_list",
+      "mcp__cortex__project_create",
+      "mcp__cortex__project_list",
+      "mcp__cortex__project_get",
+      "mcp__cortex__project_summary"
+    ],
+    "deny": [
+      "Bash(sudo *)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/cortex-gate.sh",
+            "timeout": 30000
+          }
+        ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/cortex-subagent-start.sh",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|NotebookEdit|Bash|Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/cortex-report.sh",
+            "timeout": 10000
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/cortex-complete.sh",
+            "timeout": 5000
+          }
+        ]
+      }
+    ]
+  }
+}

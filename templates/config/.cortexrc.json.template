@@ -1,0 +1,21 @@
+{
+  "workspace": "~/CortexHub",
+  "paths": {
+    "projects": "~/CortexHub/projects",
+    "data": "~/CortexHub/data",
+    "artifacts": "~/CortexHub/artifacts",
+    "bots": "~/CortexHub/bots",
+    "keys": "~/CortexHub/keys"
+  },
+  "ports": {
+    "backend": 4830,
+    "gateway": 4840,
+    "websocket": 4841
+  },
+  "agents": {},
+  "providers": {},
+  "budget": {
+    "limit": 0,
+    "currency": "USD"
+  }
+}

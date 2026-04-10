@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "cortex": {
+      "type": "stdio",
+      "command": "bun",
+      "args": ["./services/gateway/mcp/stdio.js"],
+      "env": {
+        "CORTEX_API": "http://127.0.0.1:4840",
+        "CORTEX_AGENT_ID": "your-agent-name",
+        "CORTEX_AGENT_PLATFORM": "claude-code",
+        "CORTEX_RUN_DIR": "./data/run",
+        "CORTEX_TOKEN_DIR": "$HOME/.cortex-vault/keys"
+      }
+    }
+  }
+}
