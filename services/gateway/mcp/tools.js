@@ -1,18 +1,18 @@
 export const CORTEX_TOOLS = [
   {
     name: 'task_create',
-    description: 'Create a new task in pending status and sync the task folder on disk. Requires project_id and phase_number. Does not claim it.',
+    description: 'Create a new task in pending status and sync the task folder on disk. Requires project_id. phase_number defaults to the latest (highest-numbered) phase in the project. Does not claim it.',
     inputSchema: {
       type: 'object',
       properties: {
         title: { type: 'string' },
         description: { type: 'string' },
         project_id: { type: 'string', description: 'UUID of the project this task belongs to' },
-        phase_number: { type: 'integer', description: 'Phase number within the project (1-based)' },
+        phase_number: { type: 'integer', description: 'Phase number within the project (1-based). Defaults to the latest phase if omitted.' },
         priority: { type: 'string' },
         tags: { type: 'array', items: { type: 'string' } },
       },
-      required: ['title', 'description', 'project_id', 'phase_number'],
+      required: ['title', 'description', 'project_id'],
     },
   },
   {

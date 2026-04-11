@@ -1,7 +1,6 @@
 import path from 'node:path';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { getStmts, genId, jsonParse } from '../lib/db.js';
-import { syncTaskFileLifecycle } from '../lib/task-files.js';
 import { broadcastLog } from '../lib/proxy.js';
 
 function agentContext(gateway, args = {}) {
@@ -329,101 +328,22 @@ async function handleClaimTask(args, gateway) {
   return persistTaskState(gateway, response, 'sync', args.task_id);
 }
 
-function _sanitizeProgressText(value, maxLen) {
-  if (value == null || typeof value !== 'string') return null;
-  let cleaned = value.replace(/[\u0000\uFEFF\u202E\u200B-\u200F\u2028-\u202D\u2060-\u206F]/g, '');
-  cleaned = cleaned.replace(/\u001b\[[0-9;]*[a-zA-Z]/g, '');
-  cleaned = cleaned.replace(/<[^>]*>/g, '');
-  // Strip newlines for single-line fields (matches sanitizeText with multiline: false)
-  cleaned = cleaned.replace(/[\r\n]/g, ' ');
-  return cleaned.trim().slice(0, maxLen);
-}
 
 async function handleReportProgress(args, gateway) {
   if (!args.task_id) throw new Error('task_id is required');
   if (!args.status) throw new Error('status is required');
   if (!args.summary) throw new Error('summary is required');
 
-  const t0 = Date.now();
-  const { agentId } = agentContext(gateway);
-  const stmts = getStmts();
   const taskId = args.task_id;
-
-  // Rate limit: mirror the HTTP handler (max 1 progress report per 5 seconds per task)
-  const lastProgress = stmts.getProgressByTask.all(taskId)?.[0];
-  if (lastProgress && lastProgress.timestamp) {
-    const elapsed = Math.floor(Date.now() / 1000) - lastProgress.timestamp;
-    if (elapsed < 5) {
-      throw new Error(`rate limited — wait ${5 - elapsed}s between progress reports`);
-    }
-  }
-
-  let status = args.status;
-  if (status === 'implementation') status = 'in_progress';
-  if (!['planning', 'in_progress', 'testing', 'reviewing'].includes(status)) {
-    throw new Error('invalid progress status');
-  }
-
-  const summary = _sanitizeProgressText(args.summary, 2000);
-  if (!summary) throw new Error('summary required');
-
-  const task = stmts.getCortexTask.get(taskId);
-  if (!task) throw new Error('task not found');
-
-  const ownerProgress = task.assigned_agent === agentId && ['claimed', 'in_progress', 'rejected'].includes(task.status) && status !== 'reviewing';
-  const reviewerProgress = task.reviewer_agent === agentId && task.status === 'review' && status === 'reviewing';
-  if (!ownerProgress && !reviewerProgress) {
-    throw new Error('agent cannot report progress for this task state');
-  }
-
-  if (task.status === 'claimed') stmts.advanceTask.run('in_progress', taskId, 'claimed');
-  if (task.status === 'rejected' && ownerProgress) stmts.advanceTask.run('in_progress', taskId, 'rejected');
-
-  const filesChanged = JSON.stringify(Array.isArray(args.files_changed) ? args.files_changed : []);
-  if (status === 'in_progress' && jsonParse(filesChanged, []).length === 0) {
-    throw new Error('implementation progress must include files_changed');
-  }
-
-  stmts.insertProgress.run(taskId, agentId, status, summary, filesChanged, 0, null);
-  stmts.insertAudit.run(taskId, agentId, 'task_progress', JSON.stringify({ status, summary }));
-
-  const count = stmts.countProgressByTask.get(taskId)?.count || 0;
-  let fileSync = null;
-  try {
-    fileSync = syncTaskFileLifecycle({ stmts, taskId });
-  } catch (err) {
-    fileSync = { warning: err.message };
-  }
-
-  try { stmts.touchAgent.run(agentId, agentId); } catch { /* best effort */ }
-
-  // Audit trail — required, must not be skipped
-  stmts.insertLog.run(
-    genId(), 'MCP', `/api/tasks/${taskId}/progress`,
-    null, null, agentId, task.project_id || null,
-    0, 0, 0,
-    Date.now() - t0, 200, null,
-  );
-
-  try {
-    broadcastLog({ type: 'task:progress', data: {
-      task_id: taskId,
-      agent: agentId,
-      progress_count: stmts.countProgressByTask.get(taskId)?.count || 0,
-      status,
-      summary,
-      files_changed: jsonParse(filesChanged, []),
-      timestamp: new Date().toISOString(),
-    }});
-  } catch { /* broadcast must never break the main operation */ }
-
-  const currentStatus = stmts.getCortexTask.get(taskId)?.status || 'in_progress';
-  const response = {
-    task_id: taskId,
-    progress_count: count,
-    status: currentStatus,
-    file_sync: fileSync,
-  };
+  const response = await gatewayJson(gateway, `/api/tasks/${encodeURIComponent(taskId)}/progress`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      status: args.status,
+      summary: args.summary,
+      files_changed: args.files_changed || [],
+    }),
+  });
 
   return persistTaskState(gateway, response, 'sync', taskId);
 }
@@ -576,7 +496,15 @@ async function handleTaskCreate(args, gateway) {
   if (!args.title) throw new Error('title is required');
   if (!args.description) throw new Error('description is required');
   if (!args.project_id) throw new Error('project_id is required');
-  if (!args.phase_number) throw new Error('phase_number is required');
+
+  let phaseNumber = args.phase_number;
+  if (!phaseNumber) {
+    const phases = await gatewayJson(gateway, `/api/projects/${encodeURIComponent(args.project_id)}/phases`);
+    phaseNumber = phases.phases && phases.phases.length > 0
+      ? Math.max(...phases.phases.map(p => p.phase_number))
+      : 1;
+  }
+
   const response = await gatewayJson(gateway, '/api/tasks', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -584,7 +512,7 @@ async function handleTaskCreate(args, gateway) {
       title: args.title,
       description: args.description,
       project_id: args.project_id,
-      phase_number: args.phase_number,
+      phase_number: phaseNumber,
       priority: args.priority || 'medium',
       tags: args.tags || [],
     }),
