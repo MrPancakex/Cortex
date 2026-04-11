@@ -19,6 +19,7 @@ import crypto from 'node:crypto';
 import readline from 'node:readline';
 
 const HOME = os.homedir();
+const isMac = process.platform === 'darwin';
 const CORTEX_ROOT = path.join(HOME, 'Cortex');
 const VAULT_DIR = path.join(HOME, '.cortex-vault');
 const RC_PATH = path.join(HOME, '.cortexrc.json');
@@ -280,7 +281,11 @@ if (sub === 'reset') {
   log('  ~/.cortexrc.json       configuration\n');
   log('  Projects and bot configs will NOT be deleted.\n');
   if ((await ask("Type 'reset' to confirm: ")).trim() !== 'reset') { log('Cancelled.'); done(); process.exit(0); }
-  try { spawnSync('systemctl', ['--user', 'stop', 'cortex-gateway.service']); } catch {}
+  if (isMac) {
+    try { spawnSync('pkill', ['-f', 'bun.*gateway/server.js']); } catch {}
+  } else {
+    try { spawnSync('systemctl', ['--user', 'stop', 'cortex-gateway.service']); } catch {}
+  }
   try { spawnSync('pkill', ['-f', 'backend/server.js']); } catch {}
   ok('Stopped services');
   if (fs.existsSync(DATA_DIR)) { fs.rmSync(DATA_DIR, { recursive: true, force: true }); ok('Data removed'); }
@@ -460,7 +465,7 @@ if (agents.some(a => a.platform === 'claude-code')) {
   log('  CLAUDE.md              agent protocol\n');
 }
 log('Services:');
-log('  Gateway    → port 4840 (systemd managed)');
+log(`  Gateway    → port 4840 (${isMac ? 'background process' : 'systemd managed'})`);
 log('  Dashboard  → port 4830\n');
 
 if ((await ask('Continue? (y/n) ')).trim().toLowerCase() !== 'y') { log('\nCancelled.'); done(); process.exit(0); }
@@ -509,17 +514,21 @@ if (!fs.existsSync(DB_PATH)) {
   } catch (e) { fail(`Database init: ${e.message}`); }
 } else skip('Database');
 
-// Systemd
-const SVC_DIR = path.join(HOME, '.config', 'systemd', 'user');
-const SVC_PATH = path.join(SVC_DIR, 'cortex-gateway.service');
-if (!fs.existsSync(SVC_PATH)) {
-  fs.mkdirSync(SVC_DIR, { recursive: true });
-  const bunPath = spawnSync('which', ['bun'], { encoding: 'utf8' }).stdout.trim() || path.join(HOME, '.bun', 'bin', 'bun');
-  fs.writeFileSync(SVC_PATH, `[Unit]\nDescription=Cortex Gateway (port 4840)\nAfter=network-online.target\n\n[Service]\nType=simple\nWorkingDirectory=${GATEWAY_DIR}\nExecStart=${bunPath} ${path.join(GATEWAY_DIR, 'server.js')}\nRestart=on-failure\nRestartSec=5\nEnvironment=NODE_ENV=production\nEnvironment=CORTEX_GATEWAY_HOST=127.0.0.1\nEnvironment=CORTEX_GATEWAY_PORT=4840\nEnvironment=CORTEX_GATEWAY_DB=${DB_PATH}\nEnvironment=CORTEX_TOKEN_REGISTRY=${REGISTRY_PATH}\nMemoryMax=1G\n\n[Install]\nWantedBy=default.target\n`);
-  spawnSync('systemctl', ['--user', 'daemon-reload']);
-  spawnSync('systemctl', ['--user', 'enable', 'cortex-gateway.service']);
-  ok('Systemd service configured');
-} else skip('Systemd service');
+// Service management
+if (isMac) {
+  ok('macOS detected — gateway will run in background process mode');
+} else {
+  const SVC_DIR = path.join(HOME, '.config', 'systemd', 'user');
+  const SVC_PATH = path.join(SVC_DIR, 'cortex-gateway.service');
+  if (!fs.existsSync(SVC_PATH)) {
+    fs.mkdirSync(SVC_DIR, { recursive: true });
+    const bunPath = spawnSync('which', ['bun'], { encoding: 'utf8' }).stdout.trim() || path.join(HOME, '.bun', 'bin', 'bun');
+    fs.writeFileSync(SVC_PATH, `[Unit]\nDescription=Cortex Gateway (port 4840)\nAfter=network-online.target\n\n[Service]\nType=simple\nWorkingDirectory=${GATEWAY_DIR}\nExecStart=${bunPath} ${path.join(GATEWAY_DIR, 'server.js')}\nRestart=on-failure\nRestartSec=5\nEnvironment=NODE_ENV=production\nEnvironment=CORTEX_GATEWAY_HOST=127.0.0.1\nEnvironment=CORTEX_GATEWAY_PORT=4840\nEnvironment=CORTEX_GATEWAY_DB=${DB_PATH}\nEnvironment=CORTEX_TOKEN_REGISTRY=${REGISTRY_PATH}\nMemoryMax=1G\n\n[Install]\nWantedBy=default.target\n`);
+    spawnSync('systemctl', ['--user', 'daemon-reload']);
+    spawnSync('systemctl', ['--user', 'enable', 'cortex-gateway.service']);
+    ok('Systemd service configured');
+  } else skip('Systemd service');
+}
 
 // Dependencies
 log('Installing dependencies...');
@@ -535,10 +544,22 @@ const bld = spawnSync('bun', ['x', 'vite', 'build'], { cwd: PROJECT_ROOT, stdio:
 header('Starting');
 
 // Gateway
-const gwStart = spawnSync('systemctl', ['--user', 'start', 'cortex-gateway.service']);
-if (!gwStart.error && gwStart.status === 0 && await checkHealth(4840)) {
-  ok('Gateway started on port 4840');
-} else { fail('Gateway start failed — run: cortex gateway start'); }
+if (isMac) {
+  const gwServer = path.join(GATEWAY_DIR, 'server.js');
+  const gwProc = spawn('bun', [gwServer], {
+    cwd: GATEWAY_DIR, stdio: 'ignore', detached: true,
+    env: { ...process.env, NODE_ENV: 'production', CORTEX_GATEWAY_HOST: '127.0.0.1', CORTEX_GATEWAY_PORT: '4840', CORTEX_GATEWAY_DB: DB_PATH, CORTEX_TOKEN_REGISTRY: REGISTRY_PATH },
+  });
+  gwProc.unref();
+  if (await checkHealth(4840)) {
+    ok('Gateway started on port 4840 (background process)');
+  } else { fail('Gateway start failed — run: bun run services/gateway/server.js'); }
+} else {
+  const gwStart = spawnSync('systemctl', ['--user', 'start', 'cortex-gateway.service']);
+  if (!gwStart.error && gwStart.status === 0 && await checkHealth(4840)) {
+    ok('Gateway started on port 4840');
+  } else { fail('Gateway start failed — run: cortex gateway start'); }
+}
 
 // Dashboard/backend
 if (startBackend()) {
@@ -589,7 +610,7 @@ if ((await ask('Create your first project? (y/n) ')).trim().toLowerCase() === 'y
 }
 
 // Browser
-try { spawn('xdg-open', ['http://127.0.0.1:4830'], { stdio: 'ignore', detached: true }).unref(); } catch {}
+try { spawn(isMac ? 'open' : 'xdg-open', ['http://127.0.0.1:4830'], { stdio: 'ignore', detached: true }).unref(); } catch {}
 ok('Opening dashboard in browser...');
 
 // ── Done ──
