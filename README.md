@@ -19,6 +19,8 @@ bun install
 bun run bin/cortex-init.js
 ```
 
+Works on Linux and macOS. The init wizard detects your platform automatically — Linux uses systemd for service management, macOS runs the gateway as a background process.
+
 ## Why
 
 AI agents are unreliable narrators.
