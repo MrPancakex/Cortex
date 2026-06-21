@@ -1,0 +1,33 @@
+{
+  "name": "@cortex/sdk",
+  "version": "0.2.0-rebuild",
+  "type": "module",
+  "description": "Shared runtime infrastructure. Imports only from @cortex/core and Node built-ins.",
+  "exports": {
+    ".": "./index.js",
+    "./auth": "./auth/index.js",
+    "./auth/*": "./auth/*.js",
+    "./sessions": "./sessions/index.js",
+    "./sessions/*": "./sessions/*.js",
+    "./db": "./db/index.js",
+    "./db/*": "./db/*.js",
+    "./http": "./http/index.js",
+    "./http/*": "./http/*.js",
+    "./socket": "./socket/index.js",
+    "./socket/*": "./socket/*.js",
+    "./errors": "./errors/index.js",
+    "./errors/*": "./errors/*.js",
+    "./logging": "./logging/index.js",
+    "./logging/*": "./logging/*.js",
+    "./fs": "./fs/index.js",
+    "./fs/*": "./fs/*.js",
+    "./events": "./events/index.js",
+    "./events/*": "./events/*.js",
+    "./analysis/detect-stub": "./analysis/detect-stub.js",
+    "./analysis/detect-stub.js": "./analysis/detect-stub.js",
+    "./analysis/*": "./analysis/*.js"
+  },
+  "dependencies": {
+    "@cortex/core": "workspace:*"
+  }
+}

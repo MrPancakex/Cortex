@@ -1,0 +1,71 @@
+{
+  "name": "cortex",
+  "version": "0.2.0",
+  "bin": {
+    "cortex": "./bin/cortex-init.js"
+  },
+  "private": true,
+  "type": "module",
+  "description": "Cortex v0.2 — multi-agent orchestrator (rebuild promoted to root).",
+  "workspaces": [
+    "core",
+    "sdk",
+    "services/gateway",
+    "platform"
+  ],
+  "scripts": {
+    "test": "bun test \"$PWD/core/tests\" \"$PWD/sdk/tests\" \"$PWD/services/gateway/tests\" \"$PWD/platform/tests\" \"$PWD/plugins/cortex-channel/tests\" \"$PWD/plugins/codex-reviewer/tests\" \"$PWD/scripts/lint/eslint-rules/__tests__\" \"$PWD/scripts/tests\"",
+    "lint:core": "bash scripts/lint/core-isolation.sh",
+    "lint:schemas": "bash scripts/lint/schema-named-exports.sh",
+    "lint:sdk": "bash scripts/lint/sdk-isolation.sh",
+    "lint:gateway": "bash scripts/lint/gateway-isolation.sh",
+    "lint:platform": "bash scripts/lint/platform-isolation.sh",
+    "lint:plugins": "bash scripts/lint/plugins-isolation.sh",
+    "lint:manifests": "bun scripts/lint/plugin-manifests.js",
+    "lint:events": "bash scripts/lint/events-schema-check.sh",
+    "lint:eslint": "eslint core sdk platform plugins services",
+    "lint:ssot": "eslint --config scripts/lint/ssot-eslint.config.js core sdk platform plugins services bots",
+    "lint:jscpd": "jscpd core sdk services/gateway platform plugins bots --config .jscpd.json",
+    "lint:fence-contract": "bun scripts/lint/fence-contract.mjs",
+    "lint:drift": "bun run lint:ssot && bun run lint:fence-contract && bun run lint:jscpd",
+    "lint": "bun run lint:core && bun run lint:schemas && bun run lint:sdk && bun run lint:gateway && bun run lint:platform && bun run lint:plugins && bun run lint:manifests && bun run lint:events && bun run lint:eslint && bun run lint:drift",
+    "smoke:core": "bun run core/scripts/roundtrip.js",
+    "smoke:sdk": "bun run sdk/scripts/roundtrip.js",
+    "smoke": "bun run smoke:core && bun run smoke:sdk",
+    "build:core": "bun build --target=bun core/index.js > /dev/null",
+    "build:sdk": "bun build --target=bun sdk/index.js > /dev/null",
+    "build:platform": "bun build --target=bun platform/backend/server.js > /dev/null",
+    "build:gateway": "bun build --target=bun services/gateway/server.js > /dev/null",
+    "build:frontend": "bun x vite build",
+    "build": "bun run build:core && bun run build:sdk && bun run build:platform && bun run build:gateway && bun run build:frontend",
+    "ci": "bun run lint && bun run test && bun run smoke && bun run build",
+    "dev": "bun x vite",
+    "start": "bun scripts/run-prod.sh"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@xenova/transformers": "^2.17.2",
+    "lucide-react": "^0.395.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-sparklines": "^1.7.0",
+    "recharts": "^2.12.7",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.9",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@types/react-sparklines": "^1.7.5",
+    "@typescript-eslint/parser": "^8.61.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "autoprefixer": "^10.4.19",
+    "eslint": "^10.2.1",
+    "eslint-plugin-boundaries": "^6.0.2",
+    "jscpd": "^5.0.9",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.4",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.12"
+  }
+}

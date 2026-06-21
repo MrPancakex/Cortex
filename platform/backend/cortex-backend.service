@@ -1,0 +1,27 @@
+# Systemd user unit for Cortex v0.2 platform backend.
+# Install: cp cortex-backend.service ~/.config/systemd/user/
+#          systemctl --user daemon-reload
+#          systemctl --user enable --now cortex-backend.service
+#
+# Depends on cortex-gateway.service: the platform backend proxies API
+# requests through the gateway, so the gateway must be running first.
+[Unit]
+Description=Cortex platform backend v0.2 (port 4830)
+After=network-online.target cortex-gateway.service
+Requires=cortex-gateway.service
+
+[Service]
+Type=simple
+WorkingDirectory=%h/Cortex
+ExecStart=/usr/local/bin/bun %h/Cortex/platform/backend/server.js
+Restart=on-failure
+RestartSec=5
+Environment=NODE_ENV=production
+Environment=CORTEX_PLATFORM_PORT=4830
+Environment=PLATFORM_HOST=127.0.0.1
+Environment=CORTEX_GATEWAY_HOST=127.0.0.1
+Environment=CORTEX_GATEWAY_PORT=4840
+MemoryMax=512M
+
+[Install]
+WantedBy=default.target

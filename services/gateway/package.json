@@ -1,0 +1,37 @@
+{
+  "name": "@cortex/gateway",
+  "version": "0.2.0-rebuild",
+  "type": "module",
+  "description": "Cortex gateway service. Imports @cortex/sdk + @cortex/core; nothing from platform/plugins/bots.",
+  "exports": {
+    "./bridge": "./bridge/index.js",
+    "./bridge/*": "./bridge/*.js",
+    "./sessions": "./sessions/index.js",
+    "./sessions/*": "./sessions/*.js",
+    "./proxy": "./proxy/index.js",
+    "./proxy/*": "./proxy/*.js",
+    "./tasks": "./tasks/index.js",
+    "./tasks/*": "./tasks/*.js",
+    "./gate": "./gate/index.js",
+    "./gate/*": "./gate/*.js",
+    "./router": "./router/index.js",
+    "./router/*": "./router/*.js",
+    "./plugins": "./plugins/index.js",
+    "./plugins/*": "./plugins/*.js",
+    "./mcp": "./mcp/index.js",
+    "./mcp/*": "./mcp/*.js",
+    "./meta": "./meta/index.js",
+    "./meta/*": "./meta/*.js",
+    "./events": "./events/index.js",
+    "./events/*": "./events/*.js",
+    "./auth": "./auth/index.js",
+    "./auth/*": "./auth/*.js",
+    "./boot": "./boot.js",
+    "./composer": "./composer.js",
+    "./server": "./server.js"
+  },
+  "dependencies": {
+    "@cortex/core": "workspace:*",
+    "@cortex/sdk": "workspace:*"
+  }
+}

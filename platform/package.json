@@ -1,0 +1,20 @@
+{
+  "name": "@cortex/platform",
+  "version": "0.2.0-rebuild",
+  "type": "module",
+  "private": true,
+  "description": "Cortex dashboard backend. Composes @cortex/core + @cortex/sdk + services/gateway sub-barrels; owns nothing that isn't UI-facing.",
+  "main": "backend/server.js",
+  "exports": {
+    ".": "./backend/server.js",
+    "./backend/*": "./backend/*.js",
+    "./lib/*": "./backend/lib/*.js",
+    "./middleware/*": "./backend/middleware/*.js",
+    "./routes/*": "./backend/routes/*.js"
+  },
+  "dependencies": {
+    "@cortex/core": "workspace:*",
+    "@cortex/sdk": "workspace:*",
+    "@cortex/gateway": "workspace:*"
+  }
+}

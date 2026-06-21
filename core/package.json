@@ -1,0 +1,22 @@
+{
+  "name": "@cortex/core",
+  "version": "0.2.0-rebuild",
+  "type": "module",
+  "description": "Pure schemas and constants. Depends on zod; imports nothing from sdk/services/platform/plugins/bots.",
+  "exports": {
+    ".": "./index.js",
+    "./schemas": "./schemas/index.js",
+    "./schemas/events": "./schemas/events/index.js",
+    "./schemas/events/*": "./schemas/events/*.js",
+    "./schemas/gate": "./schemas/gate.js",
+    "./schemas/gate.js": "./schemas/gate.js",
+    "./schemas/routing": "./schemas/routing.js",
+    "./schemas/routing.js": "./schemas/routing.js",
+    "./schemas/*": "./schemas/*.js",
+    "./constants": "./constants/index.js",
+    "./constants/*": "./constants/*.js"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  }
+}

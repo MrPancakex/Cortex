@@ -1,0 +1,33 @@
+# Systemd user unit for Cortex v0.2 gateway.
+# Install: cp cortex-gateway.service ~/.config/systemd/user/
+#          systemctl --user daemon-reload
+#          systemctl --user enable --now cortex-gateway.service
+[Unit]
+Description=Cortex Gateway v0.2 (port 4840)
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/Cortex
+ExecStart=/usr/local/bin/bun %h/Cortex/services/gateway/server.js
+Restart=on-failure
+RestartSec=5
+Environment=NODE_ENV=production
+Environment=CORTEX_GATEWAY_HOST=127.0.0.1
+Environment=CORTEX_GATEWAY_PORT=4840
+Environment=CORTEX_DB_PATH=%h/Cortex/data/state/cortex.db
+Environment=CORTEX_TOKEN_REGISTRY=%h/Cortex/data/state/token-registry.json
+Environment=CORTEX_STATE_ROOT=%h/Cortex/data/state
+# Pin every path root to the canonical hub so resolveProjectsRoot() returns
+# ~/Cortex/projects (precedence rung #1: $CORTEX_HUB_DIR/projects) instead of
+# the data-dir-colocated data/projects — keeps projects + ledgers from
+# splitting across two roots (Task-90 #7/#9).
+Environment=CORTEX_HOME=%h/Cortex
+Environment=CORTEX_HUB_DIR=%h/Cortex
+Environment=CORTEX_DATA_DIR=%h/Cortex/data
+Environment=CORTEX_RUN_DIR=%h/Cortex/data/run
+Environment=CORTEX_ADMIN_SOCKET=%h/Cortex/data/state/admin.sock
+MemoryMax=1G
+
+[Install]
+WantedBy=default.target

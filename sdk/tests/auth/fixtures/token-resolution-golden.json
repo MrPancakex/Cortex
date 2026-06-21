@@ -1,0 +1,88 @@
+{
+  "resolverVectors": [
+    {
+      "name": "nova base resolves from the exact base keyfile",
+      "agent": "nova",
+      "env": {
+        "CORTEX_TOKEN_DIR": "<TOKEN_DIR>"
+      },
+      "files": {
+        "keys/nova.env": "CORTEX_BEARER=nova-token\n"
+      },
+      "expectedToken": "nova-token",
+      "expectedCandidates": [
+        "<TOKEN_DIR>/nova.env",
+        "<CANONICAL_TOKEN_DIR>/nova.env",
+        "<DEFAULT_TOKEN_DIR>/nova.env"
+      ]
+    },
+    {
+      "name": "nova-2 resolves exact slot keyfile before base keyfile",
+      "agent": "nova-2",
+      "env": {
+        "CORTEX_TOKEN_DIR": "<TOKEN_DIR>"
+      },
+      "files": {
+        "keys/nova-2.env": "CORTEX_BEARER=nova-slot-token\n",
+        "keys/nova.env": "CORTEX_BEARER=nova-base-token\n"
+      },
+      "expectedToken": "nova-slot-token",
+      "expectedCandidates": [
+        "<TOKEN_DIR>/nova-2.env",
+        "<TOKEN_DIR>/nova.env",
+        "<CANONICAL_TOKEN_DIR>/nova-2.env",
+        "<CANONICAL_TOKEN_DIR>/nova.env",
+        "<DEFAULT_TOKEN_DIR>/nova-2.env",
+        "<DEFAULT_TOKEN_DIR>/nova.env"
+      ]
+    },
+    {
+      "name": "codex-worker-3 falls through to hyphenated base keyfile",
+      "agent": "codex-worker-3",
+      "env": {
+        "CORTEX_TOKEN_DIR": "<TOKEN_DIR>"
+      },
+      "files": {
+        "keys/codex-worker.env": "CORTEX_BEARER=codex-worker-token\n"
+      },
+      "expectedToken": "codex-worker-token",
+      "expectedCandidates": [
+        "<TOKEN_DIR>/codex-worker-3.env",
+        "<TOKEN_DIR>/codex-worker.env",
+        "<CANONICAL_TOKEN_DIR>/codex-worker-3.env",
+        "<CANONICAL_TOKEN_DIR>/codex-worker.env",
+        "<DEFAULT_TOKEN_DIR>/codex-worker-3.env",
+        "<DEFAULT_TOKEN_DIR>/codex-worker.env"
+      ]
+    },
+    {
+      "name": "nova-2fa is not treated as a slot suffix",
+      "agent": "nova-2fa",
+      "env": {
+        "CORTEX_TOKEN_DIR": "<TOKEN_DIR>"
+      },
+      "files": {
+        "keys/nova-2fa.env": "CORTEX_BEARER=nova-2fa-token\n",
+        "keys/nova.env": "CORTEX_BEARER=wrong-overpeel-token\n"
+      },
+      "expectedToken": "nova-2fa-token",
+      "expectedCandidates": [
+        "<TOKEN_DIR>/nova-2fa.env",
+        "<CANONICAL_TOKEN_DIR>/nova-2fa.env",
+        "<DEFAULT_TOKEN_DIR>/nova-2fa.env"
+      ]
+    }
+  ],
+  "bearerVectors": [
+    {
+      "name": "64-hex token is already a bearer hash",
+      "token": "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789",
+      "expectedBearer": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
+    },
+    {
+      "name": "raw token is hashed once",
+      "token": "raw-token",
+      "expectedBearer": "34d328009b123fbbb0dc93f18b3e6de1ecf7b1a5783c33dff7ffe1926f09e943"
+    }
+  ]
+}
