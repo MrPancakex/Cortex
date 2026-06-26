@@ -113,7 +113,7 @@ parse_runtime_env "$RUNTIME_ENV_FILE"
 if [[ "$SEED" == "1" ]]; then
   if [[ "$FORCE_SEED" == "1" || ! -s "$REGISTRY_FILE" ]]; then
     ADMIN_TOKEN="$(openssl rand -hex 32)"
-    ADMIN_HASH="$(printf '%s' "$ADMIN_TOKEN" | sha256sum | cut -d' ' -f1)"
+    ADMIN_HASH="$(printf '%s' "$ADMIN_TOKEN" | openssl dgst -sha256 | sed 's/^.*= //')"
     cat > "$REGISTRY_FILE" <<JSON
 {
   "agents": {

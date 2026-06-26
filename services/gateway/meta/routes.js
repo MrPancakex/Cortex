@@ -259,7 +259,7 @@ export function createRestartHandler({
     const cmd = `sleep 2; ${teardownScript}; exec ${runScript}`;
     let child = null;
     try {
-      child = spawnImpl('setsid', ['bash', '-c', cmd], {
+      child = spawnImpl('bash', ['-c', cmd], {
         detached: true,
         stdio: 'ignore',
       });

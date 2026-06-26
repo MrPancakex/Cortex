@@ -134,7 +134,7 @@ function runDirPerms(dir = RUN_DIR) {
   try { st = fs.statSync(dir); } catch { return null; }
   const mode = (st.mode & 0o7777).toString(8).padStart(4, '0');
   let group = String(st.gid);
-  const g = spawnSync('stat', ['-c', '%G', dir], { encoding: 'utf8' });
+  const g = spawnSync('stat', isMac ? ['-f', '%Sg', dir] : ['-c', '%G', dir], { encoding: 'utf8' });
   if (!g.error && g.status === 0) group = g.stdout.trim();
   return { mode, group, setgid: (st.mode & 0o2000) !== 0 };
 }

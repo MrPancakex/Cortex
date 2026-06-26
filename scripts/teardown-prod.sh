@@ -96,8 +96,8 @@ stop_process() {
   else
     echo "teardown-prod.sh: $label not found — nothing to stop"
     # pkill fallback so stale procs don't linger if PID file was missing.
-    pkill --full "services/gateway/server.js"   2>/dev/null || true
-    pkill --full "platform/backend/server.js"   2>/dev/null || true
+    pkill -f "services/gateway/server.js"   2>/dev/null || true
+    pkill -f "platform/backend/server.js"   2>/dev/null || true
   fi
 }
 
@@ -138,7 +138,7 @@ case "$ACTION" in
   wipe)
     if [[ -d "$STATE_DIR" ]]; then
       echo "teardown-prod.sh: wiping $STATE_DIR"
-      rm --recursive --force "$STATE_DIR"
+      rm -rf "$STATE_DIR"
     else
       echo "teardown-prod.sh: state dir already absent"
     fi
@@ -147,7 +147,7 @@ case "$ACTION" in
     DB="$STATE_DIR/cortex.db"
     if [[ -f "$DB" ]]; then
       echo "teardown-prod.sh: wiping $DB"
-      rm --force "$DB" "${DB}-wal" "${DB}-shm"
+      rm -f "$DB" "${DB}-wal" "${DB}-shm"
     else
       echo "teardown-prod.sh: DB not found at $DB"
     fi
